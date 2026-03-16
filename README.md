@@ -13,3 +13,4 @@ Simple, fast invoice generator for freelancers and small businesses. Create prof
 - Next.js + TypeScript
 - Tailwind CSS
 - Static export for fast performance commit changes
+..
