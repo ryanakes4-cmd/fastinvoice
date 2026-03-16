@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -311,6 +312,13 @@ placeholder="client@example.com"
 <div className="bg-white rounded-lg shadow p-6">
 <h2 className="text-lg font-semibold mb-4">Items</h2>
 <div className="space-y-3">
+<div className="grid grid-cols-12 gap-3 text-sm font-medium text-gray-600 mb-2">
+<div className="col-span-5">Description</div>
+<div className="col-span-2">Quantity</div>
+<div className="col-span-2">Price Per Unit ($)</div>
+<div className="col-span-2">Total</div>
+<div className="col-span-1"></div>
+</div>
 {invoice.items.map((item, index) => (
 <div key={item.id} className="grid grid-cols-12 gap-3 items-start">
 <div className="col-span-5">
@@ -329,16 +337,18 @@ min="1"
 value={item.quantity}
 onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 0)}
 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+placeholder="Qty"
 />
 </div>
-<div className="col-span-2">
+<div className="col-span-2 relative">
+<span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
 <input
 type="number"
 min="0"
 step="0.01"
 value={item.rate}
 onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
-className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+className="w-full px-3 py-2 pl-6 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
 placeholder="0.00"
 />
 </div>
