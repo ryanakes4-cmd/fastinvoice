@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Invoice, InvoiceItem, Client } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
-import { Plus, Trash2, Download, Eye, Save } from 'lucide-react';
+import { Plus, Trash2, Download, Eye, Save, Crown, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface InvoiceFormProps {
@@ -30,7 +30,20 @@ rate: 0,
 amount: 0,
 };
 
+const STRIPE_CHECKOUT_URL = 'https://buy.stripe.com/5kQfZa73qgWt7gJbha7bW00';
+
 export function InvoiceForm({ initialInvoice, onSave, userId }: InvoiceFormProps) {
+const [invoiceCount, setInvoiceCount] = useState(0);
+const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+const [isPro, setIsPro] = useState(false);
+
+useEffect(() => {
+const count = parseInt(localStorage.getItem('fastinvoice_count') || '0');
+const proStatus = localStorage.getItem('fastinvoice_pro') === 'true';
+setInvoiceCount(count);
+setIsPro(proStatus);
+}, []);
+
 const [invoice, setInvoice] = useState<Invoice>(
 initialInvoice || {
 id: uuidv4(),
@@ -100,9 +113,33 @@ const handleSave = () => {
 if (onSave) {
 onSave(invoice);
 }
+
+if (!isPro) {
+const newCount = invoiceCount + 1;
+localStorage.setItem('fastinvoice_count', newCount.toString());
+setInvoiceCount(newCount);
+
+if (newCount >= 3) {
+setShowUpgradeModal(true);
+}
+}
 };
 
 const generatePDF = () => {
+if (!isPro && invoiceCount >= 3) {
+setShowUpgradeModal(true);
+return;
+}
+
+if (!isPro) {
+const newCount = invoiceCount + 1;
+localStorage.setItem('fastinvoice_count', newCount.toString());
+setInvoiceCount(newCount);
+
+if (newCount >= 3) {
+setTimeout(() => setShowUpgradeModal(true), 1000);
+}
+}
 window.print();
 };
 
@@ -115,12 +152,97 @@ currency: 'USD',
 
 return (
 <div className="space-y-8">
+{isPro ? (
+<div className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-6 py-3 rounded-lg flex items-center justify-between">
+<div className="flex items-center gap-2">
+<Crown size={20} />
+<span className="font-bold">Pro Plan Active</span>
+</div>
+<span>Unlimited invoices</span>
+</div>
+) : (
+<div className="bg-blue-50 border border-blue-200 px-6 py-3 rounded-lg">
+<div className="flex items-center justify-between flex-wrap gap-2">
+<span className="text-blue-800">
+<strong>Free Plan:</strong> {3 - invoiceCount} invoices remaining
+</span>
+<button
+onClick={() => setShowUpgradeModal(true)}
+className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:from-yellow-500 hover:to-yellow-700 transition flex items-center gap-2"
+>
+<Sparkles size={16} />
+Upgrade to Pro
+</button>
+</div>
+</div>
+)}
+
+{showUpgradeModal && (
+<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+<div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+<div className="text-center mb-6">
+<div className="bg-yellow-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+<Crown size={32} className="text-yellow-600" />
+</div>
+<h2 className="text-2xl font-bold text-gray-900 mb-2">
+{invoiceCount >= 3 ? "You've reached your limit!" : "Upgrade to Pro"}
+</h2>
+<p className="text-gray-600">
+{invoiceCount >= 3
+? "You've used all 3 free invoices. Upgrade to create unlimited invoices."
+: "Get unlimited invoices and premium features."}
+</p>
+</div>
+
+<div className="bg-gray-50 rounded-lg p-4 mb-6">
+<div className="flex items-center justify-between mb-2">
+<span className="font-medium">Pro Plan</span>
+<span className="text-2xl font-bold text-gray-900">$7<span className="text-sm font-normal text-gray-500">/month</span></span>
+</div>
+<ul className="text-sm text-gray-600 space-y-2">
+<li className="flex items-center gap-2">✓ Unlimited invoices</li>
+<li className="flex items-center gap-2">✓ Save client details</li>
+<li className="flex items-center gap-2">✓ Email invoices directly</li>
+<li className="flex items-center gap-2">✓ Multiple templates</li>
+<li className="flex items-center gap-2">✓ Priority support</li>
+</ul>
+</div>
+
+<div className="space-y-3">
+<a
+href={STRIPE_CHECKOUT_URL}
+target="_blank"
+rel="noopener noreferrer"
+className="block w-full bg-yellow-500 hover:bg-yellow-600 text-white text-center font-bold py-3 rounded-lg transition"
+>
+Upgrade Now - $7/month
+</a>
+<button
+onClick={() => setShowUpgradeModal(false)}
+className="block w-full bg-gray-200 hover:bg-gray-300 text-gray-800 text-center font-medium py-3 rounded-lg transition"
+>
+Maybe Later
+</button>
+</div>
+</div>
+</div>
+)}
+
 <div className="flex justify-between items-center print:hidden">
 <div>
 <h1 className="text-3xl font-bold text-gray-900">Create Invoice</h1>
 <p className="text-gray-500 mt-1">Fill in the details below to generate your invoice</p>
 </div>
 <div className="flex gap-3">
+{!isPro && (
+<button
+onClick={() => setShowUpgradeModal(true)}
+className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-lg font-bold hover:from-yellow-500 hover:to-yellow-700 transition"
+>
+<Sparkles size={18} />
+Upgrade to Pro
+</button>
+)}
 <button
 onClick={() => setShowPreview(!showPreview)}
 className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
@@ -146,6 +268,18 @@ Save
 )}
 </div>
 </div>
+
+{!isPro && invoiceCount >= 3 && (
+<div className="bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg text-center">
+<p className="font-medium">You've reached the free limit of 3 invoices.</p>
+<button
+onClick={() => setShowUpgradeModal(true)}
+className="mt-2 text-red-600 underline hover:text-red-800 font-bold"
+>
+Upgrade to Pro for unlimited invoices →
+</button>
+</div>
+)}
 
 {showPreview ? (
 <div className="bg-white rounded-lg shadow-lg p-8 print:shadow-none print:p-0">
